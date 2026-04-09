@@ -1,0 +1,631 @@
+<h2 class="sr-only">Habit & Task Tracking System — monthly tracker with streak tracking, progress charts, and habit
+  management</h2>
+<style>
+  #htapp* {
+    box-sizing: border-box;
+  }
+
+  #htapp {
+    font-family: var(--font-sans);
+    padding: 0.5rem 0;
+    position: relative;
+  }
+
+  .htcard {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem 1.25rem;
+  }
+
+  .htmetric {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 0.875rem 1rem;
+  }
+
+  .htlabel {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin: 0 0 3px;
+  }
+
+  .htval {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .htsub {
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    margin: 2px 0 0;
+  }
+
+  .httab {
+    padding: 7px 14px;
+    font-size: 12px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-text-secondary);
+  }
+
+  .httab.on {
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    font-weight: 500;
+  }
+
+  .htbtn {
+    padding: 7px 14px;
+    font-size: 12px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-text-primary);
+  }
+
+  .htprimary {
+    background: #534AB7;
+    color: white;
+    border-color: #534AB7;
+  }
+
+  .htdanger {
+    color: #E24B4A;
+    border-color: #E24B4A;
+  }
+
+  .htinput {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    margin-bottom: 10px;
+  }
+
+  .htlbl {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin: 0 0 4px;
+    display: block;
+  }
+
+  .htibtn {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .htibtn.sel {
+    border: 2px solid #534AB7;
+  }
+
+  .htcol {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  .htcol.sel {
+    border-color: var(--color-text-primary);
+  }
+
+  .htday {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .htday.sel {
+    background: #534AB7;
+    color: white;
+    border-color: #534AB7;
+  }
+</style>
+<div id="htapp">
+  <div id="htinner"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const DL = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const ICONS = ['◉', '★', '◆', '▲', '●', '◐', '◈', '♫', '✏', '◑', '♥', '◇'];
+  const COLS = ['#1D9E75', '#7F77DD', '#D85A30', '#D4537E', '#378ADD', '#639922', '#BA7517', '#E24B4A', '#0F6E56', '#534AB7', '#185FA5', '#993C1D'];
+
+  const S = {
+    habits: [
+      { id: 1, name: 'Morning Run', icon: '◉', color: '#1D9E75', days: [1, 2, 3, 4, 5], reminder: '06:30', desc: '30 min cardio' },
+      { id: 2, name: 'Read 30 mins', icon: '★', color: '#7F77DD', days: [0, 1, 2, 3, 4, 5, 6], reminder: '21:00', desc: 'Any book' },
+      { id: 3, name: 'Meditate', icon: '◐', color: '#D85A30', days: [0, 1, 2, 3, 4, 5, 6], reminder: '07:00', desc: '10 min mindfulness' },
+      { id: 4, name: '2L Water', icon: '▲', color: '#378ADD', days: [0, 1, 2, 3, 4, 5, 6], reminder: '', desc: 'Stay hydrated' },
+      { id: 5, name: 'No Sugar', icon: '◆', color: '#D4537E', days: [1, 2, 3, 4, 5], reminder: '', desc: 'Avoid sweets' },
+    ],
+    comp: {},
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    tab: 'tracker',
+    nextId: 6,
+    modal: null,
+    editId: null,
+    form: { name: '', icon: '◉', color: '#1D9E75', days: [1, 2, 3, 4, 5], reminder: '', desc: '' },
+    charts: {}
+  };
+
+  (function seedData() {
+    const now = new Date();
+    for (let back = 0; back < 90; back++) {
+      const d = new Date(now); d.setDate(now.getDate() - back);
+      const [y, m, day] = [d.getFullYear(), d.getMonth(), d.getDate()];
+      S.habits.forEach(h => {
+        if (h.days.includes(d.getDay())) {
+          const k = `${y}-${m}-${day}-${h.id}`;
+          if (!S.comp[k]) {
+            const r = Math.random();
+            if (back === 0) return;
+            S.comp[k] = r > 0.15 ? 'done' : r > 0.07 ? 'missed' : 'skipped';
+          }
+        }
+      });
+    }
+  })();
+
+  function dim(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function dk(y, m, d, id) { return `${y}-${m}-${d}-${id}`; }
+  function gs(y, m, d, id) { return S.comp[dk(y, m, d, id)] || 'none'; }
+  function sched(h, y, m, d) { return h.days.includes(new Date(y, m, d).getDay()); }
+
+  function mStats(y, m) {
+    let tot = 0, done = 0, miss = 0, skip = 0;
+    const days = dim(y, m);
+    const now = new Date(), td = now.getDate();
+    const isCur = (y === now.getFullYear() && m === now.getMonth());
+    const maxD = isCur ? td : days;
+    S.habits.forEach(h => {
+      for (let d = 1; d <= maxD; d++) {
+        if (sched(h, y, m, d)) { tot++; const s = gs(y, m, d, h.id); if (s === 'done') done++; else if (s === 'missed') miss++; else if (s === 'skipped') skip++; }
+      }
+    });
+    return { tot, done, miss, skip, rate: tot ? Math.round(done / tot * 100) : 0 };
+  }
+
+  function hStats(h, y, m) {
+    let tot = 0, done = 0, miss = 0, skip = 0;
+    const days = dim(y, m);
+    const now = new Date(), td = now.getDate();
+    const maxD = (y === now.getFullYear() && m === now.getMonth()) ? td : days;
+    for (let d = 1; d <= maxD; d++) {
+      if (sched(h, y, m, d)) { tot++; const s = gs(y, m, d, h.id); if (s === 'done') done++; else if (s === 'missed') miss++; else if (s === 'skipped') skip++; }
+    }
+    return { tot, done, miss, skip, rate: tot ? Math.round(done / tot * 100) : 0 };
+  }
+
+  function streaks() {
+    const now = new Date();
+    let cur = 0, long = 0, streak = 0, broke = false;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const [y, m, day] = [d.getFullYear(), d.getMonth(), d.getDate()];
+      let allDone = true, hasS = false;
+      S.habits.forEach(h => { if (sched(h, y, m, day)) { hasS = true; if (gs(y, m, day, h.id) !== 'done') allDone = false; } });
+      if (hasS && allDone) { streak++; if (!broke) cur++; }
+      else { if (i > 0) { broke = true; long = Math.max(long, streak); streak = 0; } else { broke = true; } }
+    }
+    return { cur, long: Math.max(long, streak, cur) };
+  }
+
+  function hStreak(h) {
+    const now = new Date(); let s = 0;
+    for (let i = 1; i < 365; i++) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const [y, m, day] = [d.getFullYear(), d.getMonth(), d.getDate()];
+      if (sched(h, y, m, day)) { if (gs(y, m, day, h.id) === 'done') s++; else break; }
+    }
+    return s;
+  }
+
+  function cellBg(st, col) {
+    if (st === 'done') return col;
+    if (st === 'missed') return '#E24B4A';
+    if (st === 'skipped') return '#BA7517';
+    return 'transparent';
+  }
+  function cellTx(st) { if (st === 'done') return '✓'; if (st === 'missed') return '✗'; if (st === 'skipped') return '~'; return ''; }
+  function cycle(s) { if (s === 'none') return 'done'; if (s === 'done') return 'missed'; if (s === 'missed') return 'skipped'; return 'none'; }
+  function rateColor(r) { return r >= 80 ? '#1D9E75' : r >= 50 ? '#BA7517' : '#E24B4A'; }
+
+  function render() {
+    const el = document.getElementById('htinner');
+    if (!el) return;
+    const now = new Date();
+    const { year: y, month: m } = S;
+    const days = dim(y, m);
+    const ms = mStats(y, m);
+    const st = streaks();
+    const td = now.getDate();
+    const isCur = (y === now.getFullYear() && m === now.getMonth());
+    const todayStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    let yOpts = '', mOpts = '';
+    for (let yr = 2025; yr <= 2030; yr++)yOpts += `<option value="${yr}"${y === yr ? ' selected' : ''}>${yr}</option>`;
+    MN.forEach((n, i) => mOpts += `<option value="${i}"${m === i ? ' selected' : ''}>${n}</option>`);
+
+    if (S.modal === 'add' || S.modal === 'edit') {
+      const f = S.form;
+      el.innerHTML = `
+    <div style="min-height:680px;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:1rem;border-radius:var(--border-radius-lg);">
+      <div class="htcard" style="width:100%;max-width:460px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;font-size:15px;font-weight:500;">${S.modal === 'edit' ? 'Edit Habit' : 'Add New Habit'}</h3>
+          <button onclick="closeM()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--color-text-secondary);padding:0;line-height:1;">×</button>
+        </div>
+        <label class="htlbl">Habit name</label>
+        <input class="htinput" type="text" id="f-name" value="${escH(f.name)}" placeholder="e.g. Morning Run"/>
+        <label class="htlbl">Description (optional)</label>
+        <input class="htinput" type="text" id="f-desc" value="${escH(f.desc)}" placeholder="Short note"/>
+        <label class="htlbl">Icon</label>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+          ${ICONS.map(ic => `<button onclick="setFI('${ic}')" class="htibtn${f.icon === ic ? ' sel' : ''}" style="background:${f.icon === ic ? f.color + '22' : 'transparent'};color:${f.icon === ic ? f.color : 'var(--color-text-secondary)'};">${ic}</button>`).join('')}
+        </div>
+        <label class="htlbl">Color</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          ${COLS.map(c => `<span onclick="setFC('${c}')" class="htcol${f.color === c ? ' sel' : ''}" style="background:${c};border-color:${f.color === c ? 'var(--color-text-primary)' : 'transparent'};"></span>`).join('')}
+        </div>
+        <label class="htlbl">Active days</label>
+        <div style="display:flex;gap:5px;margin-bottom:10px;">
+          ${DL.map((dl, i) => `<button onclick="toggleD(${i})" class="htday${f.days.includes(i) ? ' sel' : ''}">${dl}</button>`).join('')}
+        </div>
+        <label class="htlbl">Reminder time (optional)</label>
+        <input class="htinput" type="time" id="f-rem" value="${f.reminder}"/>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.5rem;">
+          <button onclick="closeM()" class="htbtn">Cancel</button>
+          <button onclick="saveH()" class="htbtn htprimary">${S.modal === 'edit' ? 'Save changes' : 'Add habit'}</button>
+        </div>
+      </div>
+    </div>`;
+      return;
+    }
+
+    if (S.modal === 'summary') {
+      const ms2 = mStats(y, m);
+      let rows = '';
+      S.habits.forEach(h => {
+        const hs = hStats(h, y, m);
+        const rc = rateColor(hs.rate);
+        const barW = hs.rate;
+        rows += `
+        <div style="padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="width:22px;height:22px;border-radius:4px;background:${h.color}22;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:${h.color};flex-shrink:0;">${h.icon}</span>
+            <span style="flex:1;font-size:12px;font-weight:500;color:var(--color-text-primary);">${escH(h.name)}</span>
+            <span style="font-size:11px;color:#1D9E75;min-width:28px;text-align:right;" title="Done">${hs.done} ✓</span>
+            <span style="font-size:11px;color:#E24B4A;min-width:28px;text-align:right;" title="Missed">${hs.miss} ✗</span>
+            <span style="font-size:11px;color:#BA7517;min-width:28px;text-align:right;" title="Skipped">${hs.skip} ~</span>
+            <span style="font-size:11px;font-weight:500;color:${rc};min-width:34px;text-align:right;">${hs.rate}%</span>
+          </div>
+          <div style="height:5px;border-radius:3px;background:var(--color-background-secondary);overflow:hidden;">
+            <div style="height:100%;width:${barW}%;background:${rc};border-radius:3px;transition:width 0.3s;"></div>
+          </div>
+        </div>`;
+      });
+      const msg = ms2.rate >= 80 ? 'Excellent work! Keep the momentum going.' : ms2.rate >= 60 ? 'Good progress — push a little harder!' : 'Room to improve. Stay consistent every day.';
+      el.innerHTML = `
+    <div style="min-height:600px;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:1rem;border-radius:var(--border-radius-lg);">
+      <div class="htcard" style="width:100%;max-width:500px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;font-size:15px;font-weight:500;">Progress Summary — ${MN[m]} ${y}</h3>
+          <button onclick="closeM()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--color-text-secondary);padding:0;line-height:1;">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:1rem;">
+          <div style="background:var(--color-background-success);border-radius:var(--border-radius-md);padding:10px;text-align:center;">
+            <p style="margin:0;font-size:22px;font-weight:500;color:var(--color-text-success);">${ms2.done}</p>
+            <p style="margin:4px 0 0;font-size:11px;color:var(--color-text-success);">Done ✓</p>
+          </div>
+          <div style="background:var(--color-background-danger);border-radius:var(--border-radius-md);padding:10px;text-align:center;">
+            <p style="margin:0;font-size:22px;font-weight:500;color:var(--color-text-danger);">${ms2.miss}</p>
+            <p style="margin:4px 0 0;font-size:11px;color:var(--color-text-danger);">Missed ✗</p>
+          </div>
+          <div style="background:var(--color-background-warning);border-radius:var(--border-radius-md);padding:10px;text-align:center;">
+            <p style="margin:0;font-size:22px;font-weight:500;color:var(--color-text-warning);">${ms2.skip}</p>
+            <p style="margin:4px 0 0;font-size:11px;color:var(--color-text-warning);">Skipped ~</p>
+          </div>
+        </div>
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:10px;border-radius:5px;background:var(--color-background-primary);overflow:hidden;">
+            <div style="height:100%;width:${ms2.rate}%;background:${rateColor(ms2.rate)};border-radius:5px;"></div>
+          </div>
+          <span style="font-size:16px;font-weight:500;color:${rateColor(ms2.rate)};min-width:40px;text-align:right;">${ms2.rate}%</span>
+        </div>
+        <p style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:0 0 6px;text-transform:uppercase;letter-spacing:0.04em;">Per-habit breakdown</p>
+        <div style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:2px;font-size:9px;color:var(--color-text-tertiary);">
+          <span style="min-width:28px;text-align:right;">Done</span><span style="min-width:28px;text-align:right;">Miss</span><span style="min-width:28px;text-align:right;">Skip</span><span style="min-width:34px;text-align:right;">Rate</span>
+        </div>
+        ${rows}
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;margin-top:1rem;">
+          <p style="margin:0;font-size:12px;color:var(--color-text-primary);">${msg}</p>
+        </div>
+        <div style="text-align:right;margin-top:1rem;"><button onclick="closeM()" class="htbtn htprimary">Close</button></div>
+      </div>
+    </div>`;
+      return;
+    }
+
+    // --- Main App ---
+    let trackerHTML = '', chartsHTML = '', habitsHTML = '';
+
+    // TRACKER TAB
+    let grid = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:11px;min-width:100%;"><thead><tr>`;
+    grid += `<th style="text-align:left;padding:4px 8px;font-size:11px;color:var(--color-text-secondary);font-weight:500;min-width:110px;position:sticky;left:0;background:var(--color-background-primary);z-index:1;">Habit</th>`;
+    grid += `<th style="padding:3px 5px;font-size:10px;color:var(--color-text-secondary);font-weight:400;white-space:nowrap;text-align:center;min-width:34px;" title="Current streak">Streak</th>`;
+    for (let d = 1; d <= days; d++) {
+      const dow = new Date(y, m, d).getDay();
+      const isT = isCur && d === td;
+      grid += `<th style="padding:2px;text-align:center;min-width:24px;">
+      <div style="font-size:8px;color:${isT ? '#534AB7' : 'var(--color-text-tertiary)'};">${DL[dow]}</div>
+      <div style="font-size:9px;color:${isT ? '#534AB7' : 'var(--color-text-secondary)'};font-weight:${isT ? '500' : '400'};">${d}</div>
+    </th>`;
+    }
+    grid += `<th style="padding:4px 6px;font-size:10px;color:var(--color-text-secondary);font-weight:400;text-align:center;min-width:38px;">Rate</th></tr></thead><tbody>`;
+
+    S.habits.forEach(h => {
+      const hs = hStats(h, y, m);
+      const hst = hStreak(h);
+      const rc = rateColor(hs.rate);
+      grid += `<tr><td style="padding:3px 8px;position:sticky;left:0;background:var(--color-background-primary);z-index:1;">
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="width:18px;height:18px;border-radius:3px;background:${h.color}22;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:${h.color};flex-shrink:0;">${h.icon}</span>
+        <span style="font-size:11px;color:var(--color-text-primary);white-space:nowrap;" title="${escH(h.desc) || ''}">${escH(h.name)}</span>
+      </div>
+    </td>`;
+      const streakLabel = hst > 0 ? `<span style="color:#D85A30;font-size:10px;">◆ ${hst}</span>` : `<span style="font-size:10px;color:var(--color-text-tertiary);">—</span>`;
+      grid += `<td style="padding:3px 5px;text-align:center;">${streakLabel}</td>`;
+      for (let d = 1; d <= days; d++) {
+        const sc = sched(h, y, m, d);
+        const st2 = gs(y, m, d, h.id);
+        const isT = isCur && d === td;
+        if (sc) {
+          const bg = cellBg(st2, h.color);
+          grid += `<td style="padding:1px;text-align:center;">
+          <div onclick="toggleC(${h.id},${d})" title="Click to log: ${h.name} day ${d}" style="width:22px;height:22px;border-radius:3px;background:${bg};border:0.5px solid ${st2 === 'none' ? 'var(--color-border-tertiary)' : bg};cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:500;${isT ? 'box-shadow:0 0 0 1.5px #534AB7;' : ''}">${cellTx(st2)}</div>
+        </td>`;
+        } else {
+          grid += `<td style="padding:1px;text-align:center;"><div style="width:22px;height:22px;border-radius:3px;background:var(--color-background-secondary);opacity:0.25;"></div></td>`;
+        }
+      }
+      grid += `<td style="padding:3px 6px;text-align:center;font-size:11px;font-weight:500;color:${rc};">${hs.rate}%</td></tr>`;
+    });
+    grid += `</tbody></table></div>`;
+    grid += `<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:10px;color:var(--color-text-secondary);">Legend:</span>
+    <span style="font-size:10px;color:var(--color-text-secondary);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>Done</span>
+    <span style="font-size:10px;color:var(--color-text-secondary);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>Missed</span>
+    <span style="font-size:10px;color:var(--color-text-secondary);display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517;display:inline-block;"></span>Skipped</span>
+    <span style="font-size:10px;color:var(--color-text-tertiary);">Click a cell to cycle status</span>
+  </div>`;
+
+    // Mini Calendar
+    const firstDow = new Date(y, m, 1).getDay();
+    let cal = `<div style="margin-top:1rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary);">
+    <p style="font-size:11px;font-weight:500;color:var(--color-text-secondary);margin:0 0 6px;">Calendar — ${MN[m]} ${y} (color = completion)</p>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">
+    ${DL.map(dl => `<div style="text-align:center;font-size:9px;color:var(--color-text-tertiary);padding:1px;">${dl}</div>`).join('')}`;
+    for (let i = 0; i < firstDow; i++)cal += `<div></div>`;
+    for (let d = 1; d <= days; d++) {
+      const isT = isCur && d === td;
+      let dd = 0, dt = 0;
+      S.habits.forEach(h => { if (sched(h, y, m, d)) { dt++; if (gs(y, m, d, h.id) === 'done') dd++; } });
+      const r = dt ? dd / dt : -1;
+      let bg = 'transparent';
+      if (r >= 0.8) bg = '#1D9E75';
+      else if (r >= 0.5) bg = '#BA7517';
+      else if (r >= 0) bg = '#E24B4A44';
+      cal += `<div title="Day ${d}: ${dt ? Math.round(r * 100) + '% complete' : 'no habits'}" style="text-align:center;font-size:10px;padding:2px 1px;border-radius:3px;background:${isT ? '#534AB7' : bg};color:${isT ? 'white' : r >= 0.8 ? 'white' : 'var(--color-text-primary)'};font-weight:${isT ? '500' : '400'};cursor:default;">${d}</div>`;
+    }
+    cal += `</div></div>`;
+
+    trackerHTML = grid + cal;
+
+    // CHARTS TAB
+    chartsHTML = `
+    <div style="margin-top:0.25rem;">
+      <p style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;">Daily completion % — ${MN[m]} ${y}</p>
+      <div style="position:relative;width:100%;height:140px;"><canvas id="ht-cd" role="img" aria-label="Daily completion rate bar chart for selected month"></canvas></div>
+    </div>
+    <div style="margin-top:1.25rem;">
+      <p style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;">Weekly completion % — last 8 weeks</p>
+      <div style="position:relative;width:100%;height:140px;"><canvas id="ht-cw" role="img" aria-label="Weekly completion rate bar chart"></canvas></div>
+    </div>
+    <div style="margin-top:1.25rem;">
+      <p style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;">Monthly completion % — last 12 months</p>
+      <div style="position:relative;width:100%;height:140px;"><canvas id="ht-cm" role="img" aria-label="Monthly completion rate bar chart"></canvas></div>
+    </div>`;
+
+    // HABITS TAB
+    habitsHTML = `<div>`;
+    if (S.habits.length === 0) { habitsHTML += `<p style="font-size:13px;color:var(--color-text-tertiary);text-align:center;padding:2rem 0;">No habits yet. Add your first habit!</p>`; }
+    S.habits.forEach(h => {
+      const hs = hStats(h, y, m);
+      const dLabel = h.days.map(d => DN[d]).join(', ');
+      const rc = rateColor(hs.rate);
+      habitsHTML += `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);">
+        <span style="width:36px;height:36px;border-radius:var(--border-radius-md);background:${h.color}22;display:inline-flex;align-items:center;justify-content:center;font-size:18px;color:${h.color};flex-shrink:0;">${h.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <p style="margin:0;font-size:13px;font-weight:500;color:var(--color-text-primary);">${escH(h.name)}</p>
+          ${h.desc ? `<p style="margin:1px 0 0;font-size:11px;color:var(--color-text-tertiary);">${escH(h.desc)}</p>` : ''}
+          <p style="margin:2px 0 0;font-size:11px;color:var(--color-text-secondary);">${dLabel}${h.reminder ? ' · Alarm: ' + h.reminder : ''}</p>
+          <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+            <span style="font-size:10px;color:#1D9E75;" title="Done this month">${hs.done} done</span>
+            <span style="font-size:10px;color:#E24B4A;" title="Missed this month">${hs.miss} missed</span>
+            <span style="font-size:10px;color:#BA7517;" title="Skipped this month">${hs.skip} skipped</span>
+            <span style="font-size:10px;font-weight:500;color:${rc};">${hs.rate}%</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          <button onclick="openEdit(${h.id})" class="htbtn" style="padding:4px 9px;font-size:11px;" title="Edit this habit">Edit</button>
+          <button onclick="delH(${h.id})" class="htbtn htdanger" style="padding:4px 9px;font-size:11px;" title="Delete this habit">Delete</button>
+        </div>
+      </div>`;
+    });
+    habitsHTML += `</div>`;
+
+    el.innerHTML = `
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem;">
+    <div>
+      <h1 style="margin:0;font-size:17px;font-weight:500;color:var(--color-text-primary);">Habit & Task Tracker</h1>
+      <p style="margin:3px 0 0;font-size:11px;color:var(--color-text-secondary);">${todayStr}</p>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <select onchange="S.year=+this.value;render()" style="font-size:11px;padding:5px 7px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);">${yOpts}</select>
+      <select onchange="S.month=+this.value;render()" style="font-size:11px;padding:5px 7px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);">${mOpts}</select>
+      <button onclick="S.modal='summary';render()" class="htbtn htprimary" style="font-size:11px;padding:5px 10px;" title="View detailed progress summary">Summary ↗</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:1rem;">
+    <div class="htmetric" title="Number of habits currently being tracked">
+      <p class="htlabel">Active Habits</p>
+      <p class="htval">${S.habits.length}</p>
+      <p class="htsub">tracked</p>
+    </div>
+    <div class="htmetric" title="Percentage of scheduled habits completed this month">
+      <p class="htlabel">Completion Rate</p>
+      <p class="htval" style="color:${rateColor(ms.rate)};">${ms.rate}%</p>
+      <p class="htsub">this month</p>
+    </div>
+    <div class="htmetric" title="Consecutive days where all scheduled habits were completed">
+      <p class="htlabel">Current Streak</p>
+      <p class="htval" style="color:#D85A30;">${st.cur}</p>
+      <p class="htsub">days in a row</p>
+    </div>
+    <div class="htmetric" title="Best streak ever achieved">
+      <p class="htlabel">Longest Streak</p>
+      <p class="htval" style="color:#BA7517;">${st.long}</p>
+      <p class="htsub">personal best</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:5px;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center;">
+    <button onclick="switchTab('tracker')" class="httab${S.tab === 'tracker' ? ' on' : ''}" title="Monthly habit tracking grid">Tracker</button>
+    <button onclick="switchTab('charts')" class="httab${S.tab === 'charts' ? ' on' : ''}" title="Visual progress charts">Charts</button>
+    <button onclick="switchTab('habits')" class="httab${S.tab === 'habits' ? ' on' : ''}" title="Add, edit, or remove habits">Manage Habits</button>
+    ${S.tab === 'habits' ? `<button onclick="openAdd()" class="htbtn htprimary" style="font-size:12px;padding:7px 12px;margin-left:auto;" title="Add a new habit">+ Add Habit</button>` : ''}
+  </div>
+
+  <div class="htcard" style="padding:${S.tab === 'charts' ? '1rem' : '0.75rem 1rem'}">
+    ${S.tab === 'tracker' ? trackerHTML : S.tab === 'charts' ? chartsHTML : habitsHTML}
+  </div>
+
+  <div style="margin-top:0.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:10px;color:var(--color-text-tertiary);">◆ Streak indicator · Click cells in Tracker to log</span>
+  </div>`;
+
+    if (S.tab === 'charts') { setTimeout(() => renderCharts(y, m, days), 50); }
+  }
+
+  function renderCharts(y, m, days) {
+    const now = new Date();
+    const isCur = (y === now.getFullYear() && m === now.getMonth());
+    const maxD = isCur ? now.getDate() : days;
+
+    const dlabels = [], ddata = [];
+    for (let d = 1; d <= maxD; d++) {
+      let done = 0, tot = 0;
+      S.habits.forEach(h => { if (sched(h, y, m, d)) { tot++; if (gs(y, m, d, h.id) === 'done') done++; } });
+      if (tot > 0) { dlabels.push(String(d)); ddata.push(Math.round(done / tot * 100)); }
+    }
+
+    const wlabels = [], wdata = [];
+    for (let w = 7; w >= 0; w--) {
+      let done = 0, tot = 0;
+      for (let di = 6; di >= 0; di--) {
+        const dd = new Date(now); dd.setDate(now.getDate() - w * 7 - di);
+        const [wy, wm, wd] = [dd.getFullYear(), dd.getMonth(), dd.getDate()];
+        S.habits.forEach(h => { if (sched(h, wy, wm, wd)) { tot++; if (S.comp[dk(wy, wm, wd, h.id)] === 'done') done++; } });
+      }
+      wlabels.push(`W${8 - w}`); wdata.push(tot ? Math.round(done / tot * 100) : 0);
+    }
+
+    const mlabels = [], mdata = [];
+    for (let i = 11; i >= 0; i--) {
+      const dd = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const [my, mm] = [dd.getFullYear(), dd.getMonth()];
+      const md = dim(my, mm); let done = 0, tot = 0;
+      S.habits.forEach(h => { for (let d = 1; d <= md; d++) { if (sched(h, my, mm, d)) { tot++; if (S.comp[dk(my, mm, d, h.id)] === 'done') done++; } } });
+      mlabels.push(MS[mm]); mdata.push(tot ? Math.round(done / tot * 100) : 0);
+    }
+
+    function mkChart(id, labels, data, lbl) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      if (S.charts[id]) { S.charts[id].destroy(); }
+      const bgs = data.map(v => v >= 80 ? '#1D9E75' : v >= 50 ? '#BA7517' : '#E24B4A');
+      S.charts[id] = new Chart(canvas, { type: 'bar', data: { labels, datasets: [{ label: lbl, data, backgroundColor: bgs, borderRadius: 3, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.raw}% complete` } } }, scales: { y: { min: 0, max: 100, grid: { color: 'rgba(128,128,128,0.08)' }, ticks: { callback: v => v + '%', font: { size: 9 }, color: '#888', maxTicksLimit: 5 } }, x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#888', autoSkip: labels.length > 20, maxRotation: 0 } } } } });
+    }
+    mkChart('ht-cd', dlabels, ddata, 'Daily %');
+    mkChart('ht-cw', wlabels, wdata, 'Weekly %');
+    mkChart('ht-cm', mlabels, mdata, 'Monthly %');
+  }
+
+  function switchTab(t) { S.tab = t; render(); }
+  function toggleC(hid, day) {
+    const k = dk(S.year, S.month, day, hid);
+    const cur = S.comp[k] || 'none';
+    const next = cycle(cur);
+    if (next === 'none') delete S.comp[k]; else S.comp[k] = next;
+    render();
+  }
+  function openAdd() { S.form = { name: '', icon: '◉', color: '#1D9E75', days: [1, 2, 3, 4, 5], reminder: '', desc: '' }; S.modal = 'add'; render(); }
+  function openEdit(id) {
+    const h = S.habits.find(h => h.id === id); if (!h) return;
+    S.editId = id; S.form = { name: h.name, icon: h.icon, color: h.color, days: [...h.days], reminder: h.reminder || '', desc: h.desc || '' };
+    S.modal = 'edit'; render();
+  }
+  function delH(id) { if (confirm('Delete this habit? All tracked data will be lost.')) { { S.habits = S.habits.filter(h => h.id !== id); render(); } } }
+  function saveH() {
+    const f = S.form;
+    const nm = document.getElementById('f-name'); if (nm) f.name = nm.value.trim();
+    const ds = document.getElementById('f-desc'); if (ds) f.desc = ds.value.trim();
+    const rm = document.getElementById('f-rem'); if (rm) f.reminder = rm.value;
+    if (!f.name) return;
+    if (S.modal === 'edit') {
+      const idx = S.habits.findIndex(h => h.id === S.editId);
+      if (idx >= 0) S.habits[idx] = { ...S.habits[idx], name: f.name, icon: f.icon, color: f.color, days: [...f.days], reminder: f.reminder, desc: f.desc };
+    } else {
+      S.habits.push({ id: S.nextId++, name: f.name, icon: f.icon, color: f.color, days: [...f.days], reminder: f.reminder, desc: f.desc });
+    }
+    S.modal = null; render();
+  }
+  function toggleD(d) { const i = S.form.days.indexOf(d); if (i >= 0) S.form.days.splice(i, 1); else S.form.days.push(d); render(); }
+  function setFI(ic) { S.form.icon = ic; render(); }
+  function setFC(c) { S.form.color = c; render(); }
+  function closeM() { S.modal = null; render(); }
+  function escH(s) { if (!s) return ''; return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  render();
+</script>
