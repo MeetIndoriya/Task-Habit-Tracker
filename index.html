@@ -417,6 +417,8 @@
           grid += `<td style="padding:1px;text-align:center;"><div style="width:22px;height:22px;border-radius:3px;background:var(--color-background-secondary);opacity:0.25;"></div></td>`;
         }
       }
+
+
       grid += `<td style="padding:3px 6px;text-align:center;font-size:11px;font-weight:500;color:${rc};">${hs.rate}%</td></tr>`;
     });
     grid += `</tbody></table></div>`;
@@ -538,10 +540,7 @@
   </div>
 
   <div class="htcard" style="padding:${S.tab === 'charts' ? '1rem' : '0.75rem 1rem'}">
-    ${S.tab
-
-
-        === 'tracker' ? trackerHTML : S.tab === 'charts' ? chartsHTML : habitsHTML}
+    ${S.tab === 'tracker' ? trackerHTML : S.tab === 'charts' ? chartsHTML : habitsHTML}
   </div>
 
   <div style="margin-top:0.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
