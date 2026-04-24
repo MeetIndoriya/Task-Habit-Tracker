@@ -538,7 +538,10 @@
   </div>
 
   <div class="htcard" style="padding:${S.tab === 'charts' ? '1rem' : '0.75rem 1rem'}">
-    ${S.tab === 'tracker' ? trackerHTML : S.tab === 'charts' ? chartsHTML : habitsHTML}
+    ${S.tab
+
+
+        === 'tracker' ? trackerHTML : S.tab === 'charts' ? chartsHTML : habitsHTML}
   </div>
 
   <div style="margin-top:0.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
